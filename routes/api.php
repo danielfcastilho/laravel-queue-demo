@@ -17,3 +17,15 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::post('/demo/test', function (Request $request) {
+    return response()->noContent();
+});
+
+Route::post('/demo/test/activate/{ref}', function ($ref) {
+    return response()->noContent();
+});
+
+Route::post('/demo/test/deactivate/{ref}', function ($ref) {
+    return response()->noContent();
+});
