@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\DataTransferObjects\DemoTestDto;
-use App\Enums\AvailableQueues;
 use App\Enums\DemoTestStatus;
 use App\Models\DemoTest;
 use Illuminate\Bus\Batchable;
@@ -11,11 +10,10 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 
 class ProcessDemoTestItemJob implements ShouldQueue
 {
-    use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Batchable, Dispatchable, InteractsWithQueue, Queueable;
 
     /**
      * The number of times the job may be attempted.
@@ -31,7 +29,6 @@ class ProcessDemoTestItemJob implements ShouldQueue
         private DemoTestDto $demoTestDto,
         private bool $shouldFail = false
     ) {
-        // $this->onQueue(AvailableQueues::Processing->value);
     }
 
     /**
@@ -66,7 +63,7 @@ class ProcessDemoTestItemJob implements ShouldQueue
     {
         $failCount = (int) floor($batchCount * 0.1);
 
-        $failingIndices = range(0, $batchCount - 1, (int) ceil(10 / ($failCount / $batchCount)));
+        $failingIndices = array_slice(range(0, $batchCount - 1), 0, $failCount);
 
         $this->shouldFail = in_array($jobKey, $failingIndices);
     }

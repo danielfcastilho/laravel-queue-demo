@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\DataTransferObjects\DemoTestDto;
-use App\Enums\AvailableQueues;
 use App\Enums\InquiryStatus;
 use App\Models\DemoTestInquiry;
 use Illuminate\Bus\Batch;
@@ -11,23 +10,19 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Bus;
 
 class DispatcherJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable;
 
     private DemoTestInquiry $demoTestInquiry;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(int $demoTestInquiryId)
+    public function __construct(private int $demoTestInquiryId)
     {
-        // $this->onQueue(AvailableQueues::Dispatching->value);
-
-        $this->demoTestInquiry = DemoTestInquiry::findOrFail($demoTestInquiryId);
     }
 
     /**
@@ -35,14 +30,16 @@ class DispatcherJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $demoTestCollectionDto = DemoTestDto::fromJsonArray($this->demoTestInquiry->payload);
+        $demoTestInquiry = DemoTestInquiry::findOrFail($this->demoTestInquiryId);
+
+        $demoTestCollectionDto = DemoTestDto::fromJsonArray($demoTestInquiry->payload);
 
         $demoTestCollectionCount = count($demoTestCollectionDto);
 
         $jobs = $demoTestCollectionDto->map(function ($demoTestDto, $demoTestDtoKey) use ($demoTestCollectionCount) {
             $job = new ProcessDemoTestItemJob($demoTestDto);
 
-            if (config('enable_failing_jobs', false)) {
+            if (config('job.enable_failing_jobs', false)) {
                 $job->setupShouldFail($demoTestDtoKey, $demoTestCollectionCount);
             }
 
@@ -51,19 +48,19 @@ class DispatcherJob implements ShouldQueue
 
         Bus::batch($jobs)
             ->allowFailures()
-            ->then(function () {
-                $this->demoTestInquiry->update(['status' => InquiryStatus::Processed->value]);
+            ->then(function () use ($demoTestInquiry) {
+                $demoTestInquiry->update(['status' => InquiryStatus::Processed->value]);
             })
-            ->catch(function () {
-                $this->demoTestInquiry->update(['status' => InquiryStatus::Failed->value]);
+            ->catch(function () use ($demoTestInquiry) {
+                $demoTestInquiry->update(['status' => InquiryStatus::Failed->value]);
             })
-            ->finally(function (Batch $batch) {
-                $this->demoTestInquiry->update([
+            ->finally(function (Batch $batch) use ($demoTestInquiry) {
+                $demoTestInquiry->update([
                     'items_processed_count' => $batch->processedJobs(),
                     'items_failed_count' => $batch->failedJobs,
                 ]);
             })
-            ->name('process-demo-test-inquiry-' . $this->demoTestInquiry->id)
+            ->name('process-demo-test-inquiry-' . $demoTestInquiry->id)
             ->dispatch();
     }
 }
