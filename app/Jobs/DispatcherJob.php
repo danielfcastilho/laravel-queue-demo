@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\DataTransferObjects\DemoTestDto;
 use App\Enums\InquiryStatus;
 use App\Models\DemoTestInquiry;
+use App\Repositories\DemoTestInquiryRepositoryInterface;
 use Illuminate\Bus\Batch;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -28,39 +29,47 @@ class DispatcherJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(DemoTestInquiryRepositoryInterface $demoTestInquiryRepository): void
     {
-        $demoTestInquiry = DemoTestInquiry::findOrFail($this->demoTestInquiryId);
+        try {
+            $demoTestInquiry = $demoTestInquiryRepository->find($this->demoTestInquiryId);
 
-        $demoTestCollectionDto = DemoTestDto::fromJsonArray($demoTestInquiry->payload);
-
-        $demoTestCollectionCount = count($demoTestCollectionDto);
-
-        $jobs = $demoTestCollectionDto->map(function ($demoTestDto, $demoTestDtoKey) use ($demoTestCollectionCount) {
-            $job = new ProcessDemoTestItemJob($demoTestDto);
-
-            if (config('job.enable_failing_jobs', false)) {
-                $job->setupShouldFail($demoTestDtoKey, $demoTestCollectionCount);
+            if (!$demoTestInquiry) {
+                throw new \Exception("DemoTestInquiry not found.");
             }
 
-            return $job;
-        });
+            $demoTestCollectionDto = DemoTestDto::fromJsonArray($demoTestInquiry->payload);
 
-        Bus::batch($jobs)
-            ->allowFailures()
-            ->then(function () use ($demoTestInquiry) {
-                $demoTestInquiry->update(['status' => InquiryStatus::Processed->value]);
-            })
-            ->catch(function () use ($demoTestInquiry) {
-                $demoTestInquiry->update(['status' => InquiryStatus::Failed->value]);
-            })
-            ->finally(function (Batch $batch) use ($demoTestInquiry) {
-                $demoTestInquiry->update([
-                    'items_processed_count' => $batch->processedJobs(),
-                    'items_failed_count' => $batch->failedJobs,
-                ]);
-            })
-            ->name('process-demo-test-inquiry-' . $demoTestInquiry->id)
-            ->dispatch();
+            $demoTestCollectionCount = count($demoTestCollectionDto);
+
+            $jobs = $demoTestCollectionDto->map(function ($demoTestDto, $demoTestDtoKey) use ($demoTestCollectionCount) {
+                $job = new ProcessDemoTestItemJob($demoTestDto);
+
+                if (config('job.enable_failing_jobs', false)) {
+                    $job->setupShouldFail($demoTestDtoKey, $demoTestCollectionCount);
+                }
+
+                return $job;
+            });
+
+            Bus::batch($jobs)
+                ->allowFailures()
+                ->then(function () use ($demoTestInquiry, $demoTestInquiryRepository) {
+                    $demoTestInquiryRepository->updateStatus($demoTestInquiry, InquiryStatus::Processed->value);
+                })
+                ->catch(function () use ($demoTestInquiry, $demoTestInquiryRepository) {
+                    $demoTestInquiryRepository->updateStatus($demoTestInquiry, InquiryStatus::Failed->value);
+                })
+                ->finally(function (Batch $batch) use ($demoTestInquiry, $demoTestInquiryRepository) {
+                    $demoTestInquiryRepository->updateCounts($demoTestInquiry, $batch->processedJobs(), $batch->failedJobs);
+                })
+                ->name('process-demo-test-inquiry-' . $demoTestInquiry->id)
+                ->dispatch();
+        } catch (\Exception $e) {
+            if ($demoTestInquiry) {
+                $demoTestInquiryRepository->updateStatus($demoTestInquiry, InquiryStatus::Failed->value);
+            }
+            throw $e;
+        }
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DemoTestStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -24,6 +25,15 @@ class DemoTest extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        'status' => DemoTestStatus::class,
         'is_active' => 'boolean',
     ];
+
+    /**
+     * Scope a query to only include active records by ref.
+     */
+    public function scopeInactiveRef($query, $ref)
+    {
+        return $query->where('ref', $ref)->where('is_active', false);
+    }
 }

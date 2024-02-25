@@ -3,8 +3,7 @@
 namespace App\Jobs;
 
 use App\DataTransferObjects\DemoTestDto;
-use App\Enums\DemoTestStatus;
-use App\Models\DemoTest;
+use App\Repositories\DemoTestRepositoryInterface;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -34,29 +33,19 @@ class ProcessDemoTestItemJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(DemoTestRepositoryInterface $demoTestRepository): void
     {
         try {
             if ($this->shouldFail) {
                 throw new \Exception("Simulated failure.");
             }
 
-            $demoTest = DemoTest::where('ref', $this->demoTestDto->ref)->first();
-            if (!$demoTest) {
-                $demoTest = new DemoTest();
-                $demoTest->ref = $this->demoTestDto->ref;
-                $demoTest->name = $this->demoTestDto->name;
-                $demoTest->description = $this->demoTestDto->description;
-                $demoTest->status = DemoTestStatus::New->value;
-            } else {
-                $demoTest->status = DemoTestStatus::Updated->value;
-            }
-            $demoTest->save();
-        } catch (\Exception $exception) {
+            $demoTestRepository->createOrUpdate($this->demoTestDto);
+        } catch (\Exception $e) {
             if ($this->attempts() < $this->tries) {
                 $this->release(1);
             } else {
-                throw $exception;
+                throw $e;
             }
         }
     }

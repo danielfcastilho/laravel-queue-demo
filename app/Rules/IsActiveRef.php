@@ -13,13 +13,10 @@ class IsActiveRef implements ValidationRule
      *
      * @param  \Closure(string): \Illuminate\Translation\PotentiallyTranslatedString  $fail
      */
-    public function validate(string $attribute, mixed $value, Closure $fail): void
+    public function validate(string $attribute, mixed $ref, Closure $fail): void
     {
-        if (DemoTest::where('ref', $value)
-            ->where('is_active', false)
-            ->exists()
-        ) {
-            $fail("The $attribute with reference $value is inactive.");
+        if (DemoTest::inactiveRef($ref)->exists()) {
+            $fail("The $attribute with reference $ref is inactive.");
         }
     }
 }

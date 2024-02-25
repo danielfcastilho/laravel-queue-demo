@@ -5,14 +5,18 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ProcessDemoTestRequest;
 use App\Jobs\DispatcherJob;
 use App\Models\DemoTest;
-use App\Models\DemoTestInquiry;
+use App\Repositories\DemoTestInquiryRepositoryInterface;
+use App\Repositories\DemoTestRepositoryInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 
 class DemoTestController extends Controller
 {
-    public function __construct()
-    {
+    public function __construct(
+        protected DemoTestInquiryRepositoryInterface $demoTestInquiryRepository,
+        protected DemoTestRepositoryInterface $demoTestRepository
+    ) {
     }
 
     /**
@@ -20,20 +24,24 @@ class DemoTestController extends Controller
      * storing the inquiry details, and dispatching a job for further processing.
      *
      * @param  ProcessDemoTestRequest  $request
-     * @return Response
+     * @return JsonResponse
      */
-    public function process(ProcessDemoTestRequest $request): Response
+    public function process(ProcessDemoTestRequest $request): JsonResponse
     {
         $payload = $request->validated();
 
-        $demoTestInquiry = new DemoTestInquiry();
-        $demoTestInquiry->payload = json_encode($payload);
-        $demoTestInquiry->items_total_count = count($payload);
-        $demoTestInquiry->save();
+        try {
+            $demoTestInquiry = $this->demoTestInquiryRepository->create($payload);
 
-        DispatcherJob::dispatch($demoTestInquiry->id);
+            DispatcherJob::dispatch($demoTestInquiry->id);
+        } catch (\Throwable $e) {
+            Log::error("Error processing demo test: {$e->getMessage()}");
 
-        return response(null, Response::HTTP_CREATED);
+            return response()->json([
+                'message' => 'Something went wrong when trying to process the demo test.'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+        return response()->json([], Response::HTTP_CREATED);
     }
 
     /**
@@ -50,8 +58,15 @@ class DemoTestController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $demoTest->is_active = true;
-        $demoTest->save();
+        try {
+            $this->demoTestRepository->activate($demoTest);
+        } catch (\Throwable $e) {
+            Log::error("Error activating demo test: {$e->getMessage()}");
+
+            return response()->json([
+                'message' => 'Something went wrong when trying to activate the demo test.'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
 
         return response()->json([
             'message' => 'Demo test activated successfully.'
@@ -72,11 +87,18 @@ class DemoTestController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $demoTest->is_active = false;
-        $demoTest->save();
+        try {
+            $this->demoTestRepository->deactivate($demoTest);
+        } catch (\Throwable $e) {
+            Log::error("Error deactivating demo test: {$e->getMessage()}");
+
+            return response()->json([
+                'message' => 'Something went wrong when trying to activate the demo test.'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
 
         return response()->json([
-            'message' => "Demo test deactivated successfully."
+            'message' => 'Demo test deactivated successfully.'
         ], Response::HTTP_OK);
     }
 }
