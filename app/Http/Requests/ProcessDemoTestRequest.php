@@ -2,9 +2,12 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\HasLessThan2000Objects;
 use App\Rules\IsActiveRef;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\Response;
 
 class ProcessDemoTestRequest extends FormRequest
 {
@@ -24,7 +27,7 @@ class ProcessDemoTestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'required',
+            '*' => new HasLessThan2000Objects(),
             '*.ref' => ['required', 'string', 'distinct', new IsActiveRef()],
             '*.name' => 'required|string',
             '*.description' => 'nullable|string',
@@ -32,20 +35,16 @@ class ProcessDemoTestRequest extends FormRequest
     }
 
     /**
-     * Configure the validator instance.
+     * Returns one error message at a time.
      *
-     * @param  \Illuminate\Validation\Validator $validator
-     *
-     * @return void
+     * @throws HttpResponseException
      */
-    public function withValidator(Validator $validator)
+    protected function failedValidation(Validator $validator)
     {
-        $validator->after(function ($validator) {
-            $data = $this->all();
+        $response = response()->json([
+            'message' => $validator->errors()->first(),
+        ], Response::HTTP_UNPROCESSABLE_ENTITY);
 
-            if (count($data) > 2000) {
-                $validator->errors()->add('request', 'The request may not contain more than 2000 objects.');
-            }
-        });
+        throw new HttpResponseException($response);
     }
 }
