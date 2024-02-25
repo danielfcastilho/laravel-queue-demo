@@ -6,6 +6,7 @@ use App\Http\Requests\ProcessDemoTestRequest;
 use App\Jobs\DispatcherJob;
 use App\Models\DemoTest;
 use App\Models\DemoTestInquiry;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 
 class DemoTestController extends Controller
@@ -14,7 +15,14 @@ class DemoTestController extends Controller
     {
     }
 
-    public function process(ProcessDemoTestRequest $request)
+    /**
+     * Processes a new demo test inquiry by validating the request data,
+     * storing the inquiry details, and dispatching a job for further processing.
+     *
+     * @param  ProcessDemoTestRequest  $request
+     * @return Response
+     */
+    public function process(ProcessDemoTestRequest $request): Response
     {
         $payload = $request->validated();
 
@@ -28,7 +36,13 @@ class DemoTestController extends Controller
         return response(null, Response::HTTP_CREATED);
     }
 
-    public function activate(DemoTest $demoTest)
+    /**
+     * Activates the specified demo test.
+     *
+     * @param  DemoTest  $demoTest
+     * @return JsonResponse
+     */
+    public function activate(DemoTest $demoTest): JsonResponse
     {
         if ($demoTest->is_active === true) {
             return response()->json([
@@ -44,7 +58,13 @@ class DemoTestController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function deactivate(DemoTest $demoTest)
+    /**
+     * Deactivates the specified demo test.
+     *
+     * @param  DemoTest  $demoTest
+     * @return JsonResponse
+     */
+    public function deactivate(DemoTest $demoTest): JsonResponse
     {
         if ($demoTest->is_active === false) {
             return response()->json([

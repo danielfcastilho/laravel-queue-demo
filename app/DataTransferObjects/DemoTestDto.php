@@ -14,6 +14,13 @@ readonly class DemoTestDto
     ) {
     }
 
+    /**
+     * Creates a collection of DemoTestDto objects from a JSON string.
+     *
+     * @param string $json
+     * @return Collection
+     * @throws InvalidArgumentException
+     */
     public static function fromJsonArray(string $json): Collection
     {
         if (!json_validate($json)) {
