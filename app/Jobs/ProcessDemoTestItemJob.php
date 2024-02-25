@@ -36,21 +36,29 @@ class ProcessDemoTestItemJob implements ShouldQueue
      */
     public function handle(): void
     {
-        if ($this->shouldFail) {
-            $this->fail();
-        }
+        try {
+            if ($this->shouldFail) {
+                throw new \Exception("Simulated failure.");
+            }
 
-        $demoTest = DemoTest::where('ref', $this->demoTestDto->ref)->first();
-        if (!$demoTest) {
-            $demoTest = new DemoTest();
-            $demoTest->ref = $this->demoTestDto->ref;
-            $demoTest->name = $this->demoTestDto->name;
-            $demoTest->description = $this->demoTestDto->description;
-            $demoTest->status = DemoTestStatus::New->value;
-        } else {
-            $demoTest->status = DemoTestStatus::Updated->value;
+            $demoTest = DemoTest::where('ref', $this->demoTestDto->ref)->first();
+            if (!$demoTest) {
+                $demoTest = new DemoTest();
+                $demoTest->ref = $this->demoTestDto->ref;
+                $demoTest->name = $this->demoTestDto->name;
+                $demoTest->description = $this->demoTestDto->description;
+                $demoTest->status = DemoTestStatus::New->value;
+            } else {
+                $demoTest->status = DemoTestStatus::Updated->value;
+            }
+            $demoTest->save();
+        } catch (\Exception $exception) {
+            if ($this->attempts() < $this->tries) {
+                $this->release(1);
+            } else {
+                throw $exception;
+            }
         }
-        $demoTest->save();
     }
 
     /**
