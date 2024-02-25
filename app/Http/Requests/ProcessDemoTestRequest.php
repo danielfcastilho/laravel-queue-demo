@@ -4,8 +4,9 @@ namespace App\Http\Requests;
 
 use App\Rules\IsActiveRef;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
-class DemoTestProcessRequest extends FormRequest
+class ProcessDemoTestRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -28,5 +29,23 @@ class DemoTestProcessRequest extends FormRequest
             '*.name' => 'required|string',
             '*.description' => 'nullable|string',
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     *
+     * @param  \Illuminate\Validation\Validator $validator
+     *
+     * @return void
+     */
+    public function withValidator(Validator $validator)
+    {
+        $validator->after(function ($validator) {
+            $data = $this->all();
+
+            if (count($data) > 2000) {
+                $validator->errors()->add('request', 'The request may not contain more than 2000 objects.');
+            }
+        });
     }
 }

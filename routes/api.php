@@ -21,6 +21,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::post('/demo/test', [DemoTestController::class, 'process']);
 
-Route::post('/demo/test/activate/{ref}', [DemoTestController::class, 'activate']);
+Route::post('/demo/test/activate/{demoTest:ref}', [DemoTestController::class, 'activate']);
 
-Route::post('/demo/test/deactivate/{ref}', [DemoTestController::class, 'deactivate']);
+Route::post('/demo/test/deactivate/{demoTest:ref}', [DemoTestController::class, 'deactivate']);

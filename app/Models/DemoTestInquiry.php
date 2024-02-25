@@ -10,6 +10,8 @@ class DemoTestInquiry extends Model
 {
     use HasFactory;
 
+    protected $table = 'demo_test_inquiry';
+
     /**
      * The attributes that are mass assignable.
      *
