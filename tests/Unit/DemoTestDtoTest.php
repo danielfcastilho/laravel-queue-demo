@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Unit\DataTransferObjects;
+namespace Tests\Unit;
 
 use Tests\TestCase;
 use App\DataTransferObjects\DemoTestDto;

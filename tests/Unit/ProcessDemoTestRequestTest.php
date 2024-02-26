@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Unit\DataTransferObjects;
+namespace Tests\Unit;
 
 use App\Http\Requests\ProcessDemoTestRequest;
 use App\Models\DemoTest;

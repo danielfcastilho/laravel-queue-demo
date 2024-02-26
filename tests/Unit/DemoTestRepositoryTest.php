@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\Unit;
 
 use App\DataTransferObjects\DemoTestDto;
 use App\Enums\DemoTestStatus;
