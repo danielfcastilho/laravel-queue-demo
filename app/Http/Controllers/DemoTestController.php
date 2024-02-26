@@ -93,7 +93,7 @@ class DemoTestController extends Controller
             Log::error("Error deactivating demo test: {$e->getMessage()}");
 
             return response()->json([
-                'message' => 'Something went wrong when trying to activate the demo test.'
+                'message' => 'Something went wrong when trying to deactivate the demo test.'
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
