@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\DemoTestInquiry;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class DemoTestInquiryRepository implements DemoTestInquiryRepositoryInterface
 {
@@ -48,6 +49,10 @@ class DemoTestInquiryRepository implements DemoTestInquiryRepositoryInterface
      */
     public function updateStatus(DemoTestInquiry $demoTestInquiry, string $status): void
     {
+        if (!$demoTestInquiry->exists) {
+            throw new ModelNotFoundException("DemoTestInquiry does not exist and cannot be updated.");
+        }
+
         try {
             $demoTestInquiry->status = $status;
             $demoTestInquiry->save();
@@ -67,7 +72,11 @@ class DemoTestInquiryRepository implements DemoTestInquiryRepositoryInterface
      */
     public function updateCounts(DemoTestInquiry $demoTestInquiry, int $processedCount, int $failedCount): void
     {
-        try{
+        if (!$demoTestInquiry->exists) {
+            throw new ModelNotFoundException("DemoTestInquiry does not exist and cannot be updated.");
+        }
+
+        try {
             $demoTestInquiry->items_processed_count = $processedCount;
             $demoTestInquiry->items_failed_count = $failedCount;
             $demoTestInquiry->save();

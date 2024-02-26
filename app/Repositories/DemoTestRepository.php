@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\DataTransferObjects\DemoTestDto;
 use App\Enums\DemoTestStatus;
 use App\Models\DemoTest;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 class DemoTestRepository implements DemoTestRepositoryInterface
@@ -50,6 +51,10 @@ class DemoTestRepository implements DemoTestRepositoryInterface
      */
     public function activate(DemoTest $demoTest): bool
     {
+        if (!$demoTest->exists) {
+            throw new ModelNotFoundException("DemoTestInquiry does not exist and cannot be updated.");
+        }
+
         try {
             $demoTest->is_active = true;
             return $demoTest->save();
@@ -67,6 +72,10 @@ class DemoTestRepository implements DemoTestRepositoryInterface
      */
     public function deactivate(DemoTest $demoTest): bool
     {
+        if (!$demoTest->exists) {
+            throw new ModelNotFoundException("DemoTestInquiry does not exist and cannot be updated.");
+        }
+
         try {
             $demoTest->is_active = false;
             return $demoTest->save();
