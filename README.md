@@ -15,3 +15,8 @@
 
 ## Testing
 - run `docker exec -it queue-demo-server php artisan test`
+
+## Enable/Disable failing jobs
+- Change the environment variable `ENABLE_FAILING_JOBS` value
+- Restart the `queue-demo-server` container
+- Run `docker exec -it queue-demo-server php artisan queue:work` 
