@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DemoTestController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -17,3 +18,9 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::post('/demo/test', [DemoTestController::class, 'process']);
+
+Route::post('/demo/test/activate/{demoTest:ref}', [DemoTestController::class, 'activate']);
+
+Route::post('/demo/test/deactivate/{demoTest:ref}', [DemoTestController::class, 'deactivate']);
